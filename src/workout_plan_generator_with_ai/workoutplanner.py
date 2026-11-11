@@ -2,12 +2,11 @@ import json
 import os
 from xml.parsers.expat import model
 from xmlrpc import client
-
 from pydantic import BaseModel, Field   # Pydantic for data validation and settings management
 from typing import Literal               # For type hinting with specific string values
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
-from groq import Groq
+from groq import Groq,AuthenticationError, GroqError
 
 load_dotenv()
 
@@ -21,24 +20,31 @@ class WorkoutPlanGenrator(BaseModel):
     specific_preferences:str |None = Field(default="", description="User's specific preferences or restrictions")
 
     def generate_plan(self, prompt:str):
-        api_key = os.getenv("GROQ_API_KEY")
-
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Missing GROQ_API_KEY in environment")
-        client = Groq()
-
-        model = os.getenv("GROQ_MODEL", "gpt-oss-20b")
-        completion = client.chat.completions.create(
-        model=model,       
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8,
-        max_tokens=1000,
-    )       
-        plan =  completion.choices[0].message.content
-        if not plan:
-            raise HTTPException(status_code=502, detail="LLM returned an empty plan")
-        return plan.strip()
-  
+              
+        try:
+            client = Groq(api_key = os.getenv("GROQ_API_KEY"))
+        except GroqError as e:
+            print(f"Client setup failed: {e}")
+            raise HTTPException(status_code=402, detail="Client Setup Failed")
+    
+        try:
+            completion = client.chat.completions.create(
+            model=os.getenv("GROQ_MODEL", "gpt-oss-20b"),       
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8,
+            max_tokens=1000,
+            )       
+        
+            plan =  completion.choices[0].message.content
+            if not plan:
+                raise HTTPException(status_code=502, detail="LLM returned an empty plan")
+            return plan.strip()
+        
+        except AuthenticationError:
+            raise HTTPException(status_code=500, detail="Invalid Groq API key configured.")
+        
+        except GroqError as e:
+            raise HTTPException(status_code=502, detail=f"Groq API error: {str(e)}")
 
 class promptBuilder():    
 
