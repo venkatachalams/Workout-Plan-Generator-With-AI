@@ -1,0 +1,24 @@
+[project]
+name = "workout-plan-generator-with-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "venkatachalam.sundaram", email = "venkatachalam.india@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "dotenv>=0.9.9",
+    "fastapi>=0.162.4",
+    "groq>=1.7.0",
+    "pydantic>=2.14.3",
+    "streamlit>=1.67.0",
+    "typing>=3.10.0.0",
+]
+
+[project.scripts]
+workout-plan-generator-with-ai = "workout_plan_generator_with_ai:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
